@@ -40,5 +40,6 @@ using System.Runtime.InteropServices;
 //1.6.2   20190909 查询所有询价记录
 //1.6.3  20190919 增加图片显示
 //1.6.8  明细显示可以显示采购询价
-[assembly: AssemblyVersion("1.6.8.0")]
-[assembly: AssemblyFileVersion("1.6.8.0")]
+//1.6.9  取消是否紧急、重要、自制、优势产品、销售公司字段
+[assembly: AssemblyVersion("1.6.9.0")]
+[assembly: AssemblyFileVersion("1.6.9.0")]

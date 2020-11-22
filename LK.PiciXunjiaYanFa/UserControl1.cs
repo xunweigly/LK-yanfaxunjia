@@ -26,6 +26,7 @@ namespace LKU8.shoukuan
 
 
         DataTable dtXunjia, dtXunjiaPu;
+        DataTable dtLishiXunjia;
         string sColname;
         int iks = 0;
         string Lujing;
@@ -36,13 +37,8 @@ namespace LKU8.shoukuan
 
             ExtensionMethods.DoubleBuffered(dataGridView1, true);
             ExtensionMethods.DoubleBuffered(dataGridView2, true);
+            ExtensionMethods.DoubleBuffered(dataGridView3, true);
         }
-
-
-
-
-
-
 
         #region 加载
         private void UserControl1_Load(object sender, EventArgs e)
@@ -51,6 +47,7 @@ namespace LKU8.shoukuan
             {
                 dataGridView2.AutoGenerateColumns = false;
                 dataGridView1.AutoGenerateColumns = false;
+                dataGridView3.AutoGenerateColumns = false;
 
                 string sql = "select 0 as xz,* from zdy_lk_xunjia where byanfa = 1 and cyanfazt = '已提交' ";
                 dtXunjia = DbHelper.ExecuteTable(sql);
@@ -72,16 +69,6 @@ namespace LKU8.shoukuan
                 MessageBox.Show(ex.Message);
             
             }
-
-           
-
-
-
-            //if (canshu.cQx == "1" || canshu.cQx == "2" || canshu.userName == "demo")
-            //{
-            //    dataGridView1.Columns["fpxjr"].Visible = true;
-
-            //}
 
         }
         #endregion
@@ -106,6 +93,7 @@ namespace LKU8.shoukuan
         {
             Dgvfuzhu.SaveDataGridViewStyle(this.Name, dataGridView1);
             Dgvfuzhu.SaveDataGridViewStyle(this.Name, dataGridView2);
+            Dgvfuzhu.SaveDataGridViewStyle(this.Name, dataGridView3);
             MessageBox.Show("布局保存成功！");
         }
 
@@ -113,6 +101,7 @@ namespace LKU8.shoukuan
         {
             Dgvfuzhu.deleteDataGridViewStyle(this.Name, dataGridView1);
             Dgvfuzhu.deleteDataGridViewStyle(this.Name, dataGridView2);
+            Dgvfuzhu.deleteDataGridViewStyle(this.Name, dataGridView3);
             //Dgvfuzhu.BindReadDataGridViewStyle(this.Name, dataGridView1);
             MessageBox.Show("请关掉界面重新打开，恢复初始布局！");
         }
@@ -590,42 +579,54 @@ VALUES(newid(),313552,'询价完成提醒,id号'+@id,'研发询价完成提醒�
             if (e.RowIndex > -1)
             {
                 label6.Text = dataGridView1.Rows[e.RowIndex].Cells["id"].Value.ToString();
-
+                string cCAS = DbHelper.GetDbString(dataGridView1.Rows[e.RowIndex].Cells["cinvaddcode"].Value);
                 //dtXunjiaPu = DbHelper.ExecuteTable("select id,autoid,ddate,gys,xunjia1,xunjia2,xunjia3,bz1,bz2,bz3,bYanfaQuery,cCost,cattch from zdy_lk_xunjias where gys = '研发' and id ='" + label6.Text + "'");
                 dtXunjiaPu = DbHelper.ExecuteTable("select id,autoid,ddate,gys,xunjia1,xunjia2,xunjia3,bz1,bz2,bz3,bYanfaQuery,cCost,cattch from zdy_lk_xunjias where id ='" + label6.Text + "'");
                 dataGridView2.DataSource = dtXunjiaPu;
 
-
-                string cInvcode = DbHelper.GetDbString(dataGridView1.Rows[e.RowIndex].Cells["cinvcode"].Value);
-                string cInvaddcode = DbHelper.GetDbString(dataGridView1.Rows[e.RowIndex].Cells["cinvaddcode"].Value);
-                string cFtp2;
-                if (string.IsNullOrEmpty(cFtp))
+                if (!string.IsNullOrEmpty(cCAS))
                 {
-                    cFtp2 = "ftp://192.168.0.121/";
+                    //历史询价，查询最近3个月的历史询价
+                    string sql = string.Format(@" select a.id, a.ddate,a.cmaker,b.gys,a.fpxjrxm,a.cinvcode,cinvaddcode,a.cinvstd,a.cinvname,a.cqty1,b.xunjia1,b.xunjia2,b.xunjia3,b.bz1,b.bz2,b.bz3  from zdy_lk_xunjia a,zdy_lk_xunjias b 
+                where a.id = b.id and A.ddate>DATEADD(M,-3,GETDATE())  and (cinvcode = '{0}' or cinvaddcode = '{0}')  ", cCAS);
+                    dtLishiXunjia = DbHelper.ExecuteTable(sql);
+                    dataGridView3.DataSource = dtLishiXunjia;
                 }
                 else
                 {
-                    cFtp2 = cFtp;
+                    dataGridView3.DataSource = null;
                 }
-                string sql = string.Format("SELECT cas,cpic FROM dbo.zdy_lk_inventory where cas = '{0}' or cas='{1}' ", cInvcode, cInvaddcode);
-                DataTable dtcas = DbHelper.ExecuteTable(sql);
-                if (dtcas.Rows.Count > 0)
-                {
-                    string cCas = DbHelper.GetDbString(dtcas.Rows[0]["cas"]);
-                    string cLujing = DbHelper.GetDbString(dtcas.Rows[0]["cpic"]);
-                    if (string.IsNullOrEmpty(cLujing))
-                    {
-                        cLujing = string.Format("{0}.png", cCas);
 
-                    }
-                    Image img = Image.FromStream(Info(cFtp2, cLujing));
-                    pictureBox1.Image = img;
-                    Lujing = cLujing;
-                }
-                else
-                {
-                    pictureBox1.Image = null;
-                }
+                //string cInvcode = DbHelper.GetDbString(dataGridView1.Rows[e.RowIndex].Cells["cinvcode"].Value);
+                //string cInvaddcode = DbHelper.GetDbString(dataGridView1.Rows[e.RowIndex].Cells["cinvaddcode"].Value);
+                //string cFtp2;
+                //if (string.IsNullOrEmpty(cFtp))
+                //{
+                //    cFtp2 = "ftp://192.168.0.121/";
+                //}
+                //else
+                //{
+                //    cFtp2 = cFtp;
+                //}
+                //string sql = string.Format("SELECT cas,cpic FROM dbo.zdy_lk_inventory where cas = '{0}' or cas='{1}' ", cInvcode, cInvaddcode);
+                //DataTable dtcas = DbHelper.ExecuteTable(sql);
+                //if (dtcas.Rows.Count > 0)
+                //{
+                //    string cCas = DbHelper.GetDbString(dtcas.Rows[0]["cas"]);
+                //    string cLujing = DbHelper.GetDbString(dtcas.Rows[0]["cpic"]);
+                //    if (string.IsNullOrEmpty(cLujing))
+                //    {
+                //        cLujing = string.Format("{0}.png", cCas);
+
+                //    }
+                //    Image img = Image.FromStream(Info(cFtp2, cLujing));
+                //    pictureBox1.Image = img;
+                //    Lujing = cLujing;
+                //}
+                //else
+                //{
+                //    pictureBox1.Image = null;
+                //}
             }
 
 
@@ -665,65 +666,65 @@ VALUES(newid(),313552,'询价完成提醒,id号'+@id,'研发询价完成提醒�
             }
         }
 
+        //取消图片下载20201121
         private void toolStripMenuItem1_Click(object sender, EventArgs e)
         {
-            string pictureName;
-            //string houzhui="png";
-            //string[] str = Lujing.Split('.');
-            //if(str.Length==2)
+            //string pictureName;
+            ////string houzhui="png";
+            ////string[] str = Lujing.Split('.');
+            ////if(str.Length==2)
+            ////{
+            ////pictureName = str[0];
+            //// houzhui = str[1];
+            ////}
+            //// 设置保存文件的类型，即文件的扩展名
+            //saveFileDialog1.Filter = "jpg图片|*.JPG|gif图片|*.GIF|png图片|*.PNG|jpeg图片|*.JPEG";
+            //saveFileDialog1.FilterIndex = 3;//设置默认文件类型显示顺序 
+            //// 设置默认的文件名。注意！文件扩展名须与Filter匹配
+            //saveFileDialog1.FileName = Lujing;
+
+            //if (saveFileDialog1.ShowDialog() == DialogResult.OK)
             //{
-            //pictureName = str[0];
-            // houzhui = str[1];
+
+            //    pictureName = saveFileDialog1.FileName;
+
+
+            //    if (pictureBox1.Image != null)
+            //    {
+
+            //        ////********************照片另存*********************************
+
+            //        using (MemoryStream mem = new MemoryStream())
+            //        {
+
+            //            //这句很重要，不然不能正确保存图片或出错（关键就这一句）
+
+            //            Bitmap bmp = new Bitmap(pictureBox1.Image);
+
+            //            //保存到内存
+
+            //            //bmp.Save(mem, pictureBox1.Image.RawFormat );
+
+            //            //保存到磁盘文件
+
+            //            bmp.Save(@pictureName, pictureBox1.Image.RawFormat);
+
+            //            bmp.Dispose();
+
+
+
+            //            MessageBox.Show("图片另存成功！", "系统提示");
+
+            //        }
+
+            //        ////********************照片另存*********************************
+
+            //    }
+
+
+
             //}
-            // 设置保存文件的类型，即文件的扩展名
-            saveFileDialog1.Filter = "jpg图片|*.JPG|gif图片|*.GIF|png图片|*.PNG|jpeg图片|*.JPEG";
-            saveFileDialog1.FilterIndex = 3;//设置默认文件类型显示顺序 
-            // 设置默认的文件名。注意！文件扩展名须与Filter匹配
-            saveFileDialog1.FileName = Lujing;
-
-            if (saveFileDialog1.ShowDialog() == DialogResult.OK)
-            {
-
-                pictureName = saveFileDialog1.FileName;
-
-
-                if (pictureBox1.Image != null)
-                {
-
-                    ////********************照片另存*********************************
-
-                    using (MemoryStream mem = new MemoryStream())
-                    {
-
-                        //这句很重要，不然不能正确保存图片或出错（关键就这一句）
-
-                        Bitmap bmp = new Bitmap(pictureBox1.Image);
-
-                        //保存到内存
-
-                        //bmp.Save(mem, pictureBox1.Image.RawFormat );
-
-                        //保存到磁盘文件
-
-                        bmp.Save(@pictureName, pictureBox1.Image.RawFormat);
-
-                        bmp.Dispose();
-
-
-
-                        MessageBox.Show("图片另存成功！", "系统提示");
-
-                    }
-
-                    ////********************照片另存*********************************
-
-                }
-
-
-
-            }
         }
-
 
         //定时刷新
         private void timer1_Tick(object sender, EventArgs e)
@@ -747,15 +748,15 @@ VALUES(newid(),313552,'询价完成提醒,id号'+@id,'研发询价完成提醒�
         //设置颜色
         private void dataGridView1_CellPainting(object sender, DataGridViewCellPaintingEventArgs e)
         {
-            if (e.RowIndex > -1)
-            {
-                string cImportant = this.dataGridView1.Rows[e.RowIndex].Cells["重要"].Value.ToString();
-                string cUrgent = this.dataGridView1.Rows[e.RowIndex].Cells["紧急"].Value.ToString();
-                if (cImportant == "True" || cUrgent == "True")
-                {
-                    dataGridView1.Rows[e.RowIndex].DefaultCellStyle.ForeColor = Color.Red;
-                }
-            }
+            //if (e.RowIndex > -1)
+            //{
+            //    string cImportant = this.dataGridView1.Rows[e.RowIndex].Cells["重要"].Value.ToString();
+            //    string cUrgent = this.dataGridView1.Rows[e.RowIndex].Cells["紧急"].Value.ToString();
+            //    if (cImportant == "True" || cUrgent == "True")
+            //    {
+            //        dataGridView1.Rows[e.RowIndex].DefaultCellStyle.ForeColor = Color.Red;
+            //    }
+            //}
         }
 
         private void dataGridView2_Leave(object sender, EventArgs e)
@@ -787,8 +788,6 @@ VALUES(newid(),313552,'询价完成提醒,id号'+@id,'研发询价完成提醒�
                 Clipboard.SetData(DataFormats.Text, sv);
             }
         }
-
-
 
 
 
@@ -1039,33 +1038,33 @@ cattch_fileid =null where autoid = '{0}'", id);
 
         private void dataGridView1_CellContentClick(object sender, DataGridViewCellEventArgs e)
         {
-            int CIndex = e.ColumnIndex;
-            if (dataGridView1.Columns[CIndex].Name == "图片")
-            {
-                string cInvcode = DbHelper.GetDbString(dataGridView1.Rows[e.RowIndex].Cells["cinvcode"].Value);
-                string cInvaddcode = DbHelper.GetDbString(dataGridView1.Rows[e.RowIndex].Cells["cinvaddcode"].Value);
+            //int CIndex = e.ColumnIndex;
+            //if (dataGridView1.Columns[CIndex].Name == "图片")
+            //{
+            //    string cInvcode = DbHelper.GetDbString(dataGridView1.Rows[e.RowIndex].Cells["cinvcode"].Value);
+            //    string cInvaddcode = DbHelper.GetDbString(dataGridView1.Rows[e.RowIndex].Cells["cinvaddcode"].Value);
 
-                string sql = string.Format("SELECT cas,cpic FROM dbo.zdy_lk_inventory where cas = '{0}' or cas='{1}' ", cInvcode, cInvaddcode);
-                DataTable dtcas = DbHelper.ExecuteTable(sql);
-                if (dtcas.Rows.Count > 0)
-                {
-                    string cCas = DbHelper.GetDbString(dtcas.Rows[0]["cas"]);
-                    string cLujing = DbHelper.GetDbString(dtcas.Rows[0]["cpic"]);
-                    if (string.IsNullOrEmpty(cLujing))
-                    {
-                        cLujing = string.Format("{0}.png", cCas);
+            //    string sql = string.Format("SELECT cas,cpic FROM dbo.zdy_lk_inventory where cas = '{0}' or cas='{1}' ", cInvcode, cInvaddcode);
+            //    DataTable dtcas = DbHelper.ExecuteTable(sql);
+            //    if (dtcas.Rows.Count > 0)
+            //    {
+            //        string cCas = DbHelper.GetDbString(dtcas.Rows[0]["cas"]);
+            //        string cLujing = DbHelper.GetDbString(dtcas.Rows[0]["cpic"]);
+            //        if (string.IsNullOrEmpty(cLujing))
+            //        {
+            //            cLujing = string.Format("{0}.png", cCas);
 
-                    }
-                    FrmPic frm = new FrmPic(cLujing, cCas);
-                    frm.Show();
-                }
-                else
-                {
-                    MessageBox.Show("找不到图片！");
+            //        }
+            //        FrmPic frm = new FrmPic(cLujing, cCas);
+            //        frm.Show();
+            //    }
+            //    else
+            //    {
+            //        MessageBox.Show("找不到图片！");
 
-                }
+            //    }
 
-            }
+            //}
 
         }
 
